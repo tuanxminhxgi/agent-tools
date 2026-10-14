@@ -1,0 +1,120 @@
+{
+  "//": "Example: npm-workspaces monorepo - packages/api (Express + Prisma, Vitest), packages/ui (React/Next.js), e2e/ (Playwright). Copy to .claude/agent-queue.config.json and adjust paths. Every role listed under `roles` needs a prompt file .claude/agents/<role>.md.",
+  "projectName": "acme-shop",
+  "cliHint": "/agent-orchestration:task",
+  "risk": {
+    "moneyKeywords": ["payment", "invoice", "refund", "payout", "checkout"],
+    "migrationPaths": ["packages/db/prisma/schema.prisma", "packages/db/prisma/migrations/"],
+    "highPatterns": ["auth", "permission", "guard", "upload", "\\.routes\\.", "middleware", "session"],
+    "mediumPatterns": ["packages/api/src/"]
+  },
+  "skills": [
+    {
+      "skill": "api-conventions",
+      "domain": "backend",
+      "globs": ["packages/api/src/**/*.ts", "packages/db/prisma/**"],
+      "roots": ["packages/api", "packages/db"],
+      "reminder": [
+        "You are editing backend code. Apply the `api-conventions` skill (.claude/skills/api-conventions/SKILL.md).",
+        "Layers: controller (validate input) -> service (business rules + permissions) -> repository (database only).",
+        "Changing schema.prisma always comes with a new migration; never edit an existing one."
+      ]
+    },
+    {
+      "skill": "ui-components",
+      "domain": "web",
+      "globs": ["packages/ui/src/**/*.tsx", "packages/ui/src/**/*.css"],
+      "roots": ["packages/ui"],
+      "reminder": [
+        "You are editing a UI component. Apply the `ui-components` skill (.claude/skills/ui-components/SKILL.md).",
+        "Use the design-system components and tokens; no hard-coded colours; no user-visible strings outside the translation files."
+      ]
+    }
+  ],
+  "domains": [
+    { "domain": "e2e", "globs": ["e2e/**"] },
+    { "domain": "i18n", "globs": ["packages/ui/src/locales/**"] },
+    { "domain": "infra", "globs": ["scripts/**", ".claude/**", ".github/**"] }
+  ],
+  "locks": {
+    "db-schema": ["packages/db/prisma/schema.prisma", "packages/db/prisma/migrations/**"],
+    "translations": ["packages/ui/src/locales/**"]
+  },
+  "testDb": {
+    "commands": ["npm test", "vitest", "npm run test"],
+    "envFile": "packages/api/.env",
+    "schemaParam": true
+  },
+  "worker": {
+    "linkDirs": ["packages/api/node_modules", "e2e/node_modules", "packages/api/.env"],
+    "cloneDirs": ["node_modules", "packages/ui/node_modules"]
+  },
+  "workers": 2,
+  "resources": {
+    "e2e-stack": { "verify": ["playwright", "(^|\\s|/)e2e(/|\\s|$)"], "limit": 1 }
+  },
+  "ci": { "workflow": "CI", "branch": "main", "gate": "warn" },
+  "roles": {
+    "developer-backend": {
+      "kind": "developer",
+      "when": { "domains": ["backend"] },
+      "skills": ["api-conventions"],
+      "writes": ["packages/api/**", "packages/db/**"],
+      "bash": ["Bash(npm run:*)", "Bash(npm test:*)", "Bash(npx:*)", "Bash(node:*)", "Bash(cd:*)"],
+      "model": "sonnet",
+      "maxBudgetUsd": 6
+    },
+    "developer-web": {
+      "kind": "developer",
+      "when": { "domains": ["web"] },
+      "skills": ["ui-components"],
+      "writes": ["packages/ui/**"],
+      "bash": ["Bash(npm run:*)", "Bash(npm test:*)", "Bash(npx:*)", "Bash(node:*)", "Bash(cd:*)"],
+      "model": "sonnet",
+      "maxBudgetUsd": 10
+    },
+    "rbac-reviewer": {
+      "kind": "reviewer",
+      "when": {
+        "touches": ["packages/api/src/**/*.routes.ts", "packages/api/src/**/*permission*", "packages/api/src/middleware/**", "packages/ui/src/**/nav*.ts"]
+      },
+      "skills": [],
+      "writes": [],
+      "model": "sonnet",
+      "maxBudgetUsd": 2
+    },
+    "i18n-reviewer": {
+      "kind": "reviewer",
+      "when": {
+        "domains": ["i18n"],
+        "touches": ["packages/ui/src/**/*.tsx"],
+        "diff": {
+          "paths": ["packages/ui/src/**/*.tsx", "packages/ui/src/locales/**"],
+          "added": ["\\bt\\(\\s*['\"`]", "useTranslation\\(", ">[^<{]*[A-Za-z]{3,}[^<{]*<"]
+        }
+      },
+      "skills": [],
+      "writes": [],
+      "model": "haiku",
+      "maxBudgetUsd": 2
+    },
+    "migration-reviewer": {
+      "kind": "reviewer",
+      "when": { "locks": ["db-schema"] },
+      "skills": [],
+      "writes": [],
+      "model": "sonnet",
+      "maxBudgetUsd": 2
+    },
+    "fixer": {
+      "kind": "fixer",
+      "when": { "openBugs": true },
+      "skills": [],
+      "writes": ["**"],
+      "bash": ["Bash(npm run:*)", "Bash(npm test:*)", "Bash(npx:*)", "Bash(node:*)", "Bash(cd:*)"],
+      "model": "sonnet",
+      "modelByRound": [{ "from": 2, "model": "opus" }],
+      "maxBudgetUsd": 4
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "//": "Example: a single Go service - cmd/, internal/, SQL migrations in db/migrations (goose/golang-migrate), integration tests against Postgres behind a build tag. Copy to .claude/agent-queue.config.json and adjust paths.",
+  "projectName": "ledger-api",
+  "cliHint": "/agent-orchestration:task",
+  "risk": {
+    "moneyKeywords": ["payment", "transfer", "payout", "ledger"],
+    "migrationPaths": ["db/migrations/"],
+    "highPatterns": ["auth", "permission", "middleware", "session", "internal/http/handlers/"],
+    "mediumPatterns": ["internal/"]
+  },
+  "skills": [],
+  "domains": [
+    { "domain": "backend", "globs": ["cmd/**", "internal/**"] },
+    { "domain": "infra", "globs": ["scripts/**", ".claude/**", ".github/**", "deploy/**"] }
+  ],
+  "locks": {
+    "lockfile": ["go.mod", "go.sum"],
+    "db-schema": ["db/migrations/**", "db/schema.sql"]
+  },
+  "testDb": {
+    "commands": ["-tags=integration", "make test-integration"],
+    "envFile": ".env.test"
+  },
+  "diffIgnore": ["**/*_test.go", "**/*.md", "**/testdata/**", "**/*.pb.go", "**/mocks/**"],
+  "worker": { "linkDirs": [".env.test"], "cloneDirs": [] },
+  "workers": 3,
+  "roles": {
+    "developer": {
+      "kind": "developer",
+      "when": { "always": true },
+      "skills": [],
+      "writes": ["**"],
+      "bash": ["Bash(go build:*)", "Bash(go test:*)", "Bash(go vet:*)", "Bash(go run:*)", "Bash(make:*)", "Bash(cd:*)"],
+      "model": "sonnet"
+    },
+    "qa": {
+      "kind": "evaluator",
+      "when": { "riskAtLeast": "medium" },
+      "skills": [],
+      "writes": ["**/*_test.go", "**/testdata/**", "reports/**", "tasks/B-*"],
+      "bash": ["Bash(go test:*)", "Bash(cd:*)"],
+      "model": "sonnet"
+    },
+    "migration-reviewer": {
+      "kind": "reviewer",
+      "when": {
+        "locks": ["db-schema"],
+        "diff": { "paths": ["db/migrations/**"], "added": ["\\b(DROP|drop)\\b", "(ALTER|alter)\\s+(COLUMN|column)", "(NOT|not)\\s+(NULL|null)"] }
+      },
+      "skills": [],
+      "writes": [],
+      "model": "sonnet",
+      "maxBudgetUsd": 2
+    }
+  }
+}

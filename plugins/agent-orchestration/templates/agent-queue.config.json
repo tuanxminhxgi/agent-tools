@@ -1,0 +1,76 @@
+{
+  "//": "Project-specific rules for the agent queue. Any key you leave out falls back to the built-in default. AGENT_QUEUE_* environment variables override this file. Keys starting with // are comments and are ignored. Full reference: the plugin README, section 'Configuration'. Ready-made examples: templates/examples/ in the plugin.",
+
+  "projectName": null,
+  "//projectName": "Project name (init fills it in). Task prompts tell agents to read, at the top of each skill's SKILL.md, the section that applies the skill to this project.",
+
+  "cliHint": "/agent-orchestration:task",
+  "//cliHint": "How the queue CLI is spelled in prompts, reports and the INBOX.",
+
+  "risk": {
+    "moneyKeywords": [],
+    "migrationPaths": [],
+    "highPatterns": ["auth", "permission", "guard", "upload", "\\.routes\\.", "middleware", "session"],
+    "mediumPatterns": []
+  },
+  "//risk": "moneyKeywords: substrings (case-insensitive) of a task's paths or title that mean it TOUCHES MONEY -> high risk, and the task waits for human approval before it starts, e.g. [\"payment\", \"invoice\"]. migrationPaths: substrings of a path that mean a DB schema/migration change -> high risk, gated the same way, e.g. [\"db/migrations/\"]. highPatterns / mediumPatterns: case-insensitive regexes on the task's `touches` -> high risk adds QA + security, medium adds QA.",
+
+  "skills": [],
+  "//skills": "Each entry: {skill, domain, globs, roots, reminder}. `globs`: the PreToolUse hook injects `reminder` whenever a matching file is edited. `roots`: path prefixes also matched in the task's `File:` line and verify commands (e.g. `cd services/api && ...`) so the prompt names the skill before any file is touched. The skill must exist at .claude/skills/<skill>/SKILL.md. `domain` feeds pattern selection (two domains -> Router).",
+
+  "locks": {},
+  "//locks": "Exclusive locks: name -> globs. A task whose `touches` hit a lock runs in the SERIAL lane, one at a time. A built-in `lockfile` lock (package.json and npm/yarn/pnpm lockfiles) always exists. A glob starting with ! excludes paths. Example: {\"db-schema\": [\"db/migrations/**\"]}.",
+
+  "testDb": { "commands": ["npm test", "vitest", "npm run test"], "envFile": null, "envVar": "TEST_DATABASE_URL", "schemaParam": false },
+  "//testDb": "A verify command containing one of `commands` needs a test database whose URL is in the variable `envVar`; `envFile` is a .env file that may define it. If it is missing, the command is reported as skipped (not failed) and the task goes to needs-human instead of done. Each parallel worker gets its own Postgres schema (agent_w<n>) through `options=-c search_path=...`; set `schemaParam` to true if your migration tool also needs `schema=...` in the URL (e.g. Prisma).",
+
+  "commit": {
+    "typeKeywords": {
+      "test": ["test", "fixture", "spec"],
+      "docs": ["docs", "readme", "documentation"],
+      "fix": ["fix", "bug", "patch", "hotfix"],
+      "refactor": ["refactor", "clean up", "cleanup", "rename"],
+      "perf": ["perf", "performance", "optimi"],
+      "build": ["migration", "schema", "build", "dependenc"],
+      "feat": ["add", "new", "feature", "api", "ui", "page", "endpoint", "job", "support"]
+    },
+    "trailers": ["Co-Authored-By: Claude <noreply@anthropic.com>"]
+  },
+  "//commit": "One commit per finished task. The conventional-commit type is the first key of `typeKeywords` (in order) whose keywords appear in the task title or scope (lower-case substring match); no match = chore. Declaring `typeKeywords` replaces the whole table - add words in your backlog's language if it is not English. `trailers` are appended to every commit message ([] = none).",
+
+  "diffIgnore": ["**/*.test.*", "**/*.spec.*", "**/*.md", "**/__fixtures__/**"],
+  "//diffIgnore": "Globs NOT counted toward the line/file thresholds when `pattern` measures a diff (tests, docs, generated files). They still count for the 'edited a file outside touches' check. Declaring this key replaces the whole list - keep the defaults you still want.",
+
+  "worker": { "linkDirs": ["node_modules"], "cloneDirs": [] },
+  "//worker": "Git-ignored dependency directories shared with each parallel worker's worktree, so nothing is reinstalled. linkDirs are SYMLINKED; cloneDirs are COPIED (copy-on-write where the filesystem supports it) for tools that refuse symlinks pointing outside the project. A path may not be in both lists. Monorepos list every one, e.g. [\"node_modules\", \"packages/api/node_modules\"]. Write `node_modules` without a trailing slash in .gitignore so the symlink does not show up in git status.",
+
+  "workers": 3,
+  "//workers": "Number of parallel workers (each with its own worktree, test-DB schema and e2e ports). Size it to your machine's RAM. AGENT_QUEUE_WORKERS overrides it.",
+
+  "resources": {},
+  "//resources": "COUNTABLE shared resources: limit how many tasks hold one at the same time, without forcing the serial lane (unlike `locks`). A task holds a resource when one of its verify commands matches a regex in `verify`. Add \"serial\": true to also run those tasks in the serial lane. Example, one browser e2e stack at a time: {\"e2e-stack\": {\"verify\": [\"playwright\"], \"limit\": 1}}.",
+
+  "roles": {},
+  "//roles": "Orchestration roles, merged with the four built-in ones (developer, qa, security, planner). Each role: {kind: developer|evaluator|reviewer|fixer|planner, when: {domains?, riskAtLeast?, touches?, locks?, openBugs?, always?, diff?}, skills: [..], writes: [globs], model: opus|sonnet|haiku, bash?: [\"Bash(npx vitest:*)\"], modelByRound?: [{from: 2, model: \"opus\"}], maxBudgetUsd?: number}. The `when` keys are ORed; `diff` ({paths, added?}, reviewers only) is an extra check on the real diff. Each role needs a prompt file .claude/agents/<role>.md - start reviewers from the plugin's templates/agent-reviewer.md. Example: {\"docs-reviewer\": {\"kind\": \"reviewer\", \"when\": {\"touches\": [\"docs/**\"]}, \"writes\": [], \"model\": \"haiku\"}}.",
+
+  "headings": {
+    "handoff": "Handoff log",
+    "analysis": "Orchestration analysis",
+    "question": "Question",
+    "options": "Options",
+    "recommendation": "Recommendation",
+    "answer": "Answer",
+    "bugSections": ["Summary", "Environment", "Steps to reproduce", "Expected", "Actual", "Evidence", "Suspected code", "Repro test"],
+    "criticalPath": "critical path",
+    "doneWhen": "Done when",
+    "legacyDeps": "Depends on:",
+    "legacyManual": "[manual]"
+  },
+  "//headings": "Markdown headings that are part of the task/bug/question FILE FORMAT - the harness reads and writes them. Change them only if your backlog already uses other words (e.g. another language), and then change tasks/_templates/ to match. `answer` is also the `Answer:` line in the INBOX; `criticalPath` is the phrase that marks the critical-path line in tasks/INDEX.md; `bugSections` are the 8 required bug sections in order (the last one is the repro test).",
+
+  "ci": null,
+  "//ci": "CI workflow to watch with the GitHub CLI (`gh`): {\"workflow\": \"CI\", \"branch\": \"main\", \"gate\": \"warn\", \"localHint\": \"make ci-<job>\"}. localHint (optional) = command shown as-is in the INBOX for rerunning a red job locally; write `<job>` where the job name goes. warn = report a red CI in the INBOX and conductor output; block = additionally stop pushing and stop starting new work while that branch is red. null = off (no `gh` calls).",
+
+  "dashboard": { "port": 4400, "tokenWarnPerTask": null },
+  "//dashboard": "Read-only dashboard (listens on 127.0.0.1 only). port: default port (--port N overrides). tokenWarnPerTask: tokens (integer > 0) on ONE task above which the dashboard highlights it; null = never."
+}

@@ -1,0 +1,61 @@
+{
+  "description": "agent-orchestration - Stop: verify the session's doing task, settle it, commit, claim the next one. PreToolUse(Write|Edit): skill reminder from the `skills` table in .claude/agent-queue.config.json. SubagentStart/SubagentStop: record subagents in the event log. PostCompact: save the compact summary to logs/agent-queue/<task>/compact-<n>.md + an agent.compact event (off with AGENT_QUEUE_EVENTS=0, not affected by AGENT_QUEUE_DISABLE). Turn off Stop/PreToolUse: AGENT_QUEUE_DISABLE=1.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/agent-queue.mjs\"",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-reminder.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-events.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-events.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/compact-log.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

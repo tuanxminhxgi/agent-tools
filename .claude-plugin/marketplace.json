@@ -1,0 +1,15 @@
+{
+  "name": "agent-tools",
+  "description": "Tools for orchestrating AI agents in Claude Code - usable in any project.",
+  "owner": {
+    "name": "tuanminhgi"
+  },
+  "plugins": [
+    {
+      "name": "agent-orchestration",
+      "description": "Task queue on tasks/*.md where only the verifier marks done, a Stop hook chains tasks, a planner asks without stopping, a conductor runs parallel workers, reviewers and a bug-fix loop, and every task gets the simplest orchestration pattern that is enough.",
+      "source": "./plugins/agent-orchestration",
+      "category": "development"
+    }
+  ]
+}

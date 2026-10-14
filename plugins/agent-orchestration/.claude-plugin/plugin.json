@@ -1,0 +1,8 @@
+{
+  "name": "agent-orchestration",
+  "version": "0.2.0",
+  "description": "Task queue for AI agents: tasks are markdown files with front-matter, only the verifier marks a task done after its check commands pass, a Stop hook chains the next task, a planner splits requirements and asks without stopping, and a conductor runs parallel workers, QA/reviewers and a bug-fix loop - each task with the simplest orchestration pattern that is reliable enough.",
+  "author": {
+    "name": "tuanminhgi"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "//": "Example: Django project - apps under src/<app>/, Django migrations, pytest with a Postgres test database, a virtualenv in .venv. Copy to .claude/agent-queue.config.json and adjust paths.",
+  "projectName": "bookings",
+  "cliHint": "/agent-orchestration:task",
+  "risk": {
+    "moneyKeywords": ["payment", "invoice", "refund", "stripe"],
+    "migrationPaths": ["/migrations/"],
+    "highPatterns": ["auth", "permission", "upload", "middleware", "session", "views\\.py", "urls\\.py"],
+    "mediumPatterns": ["src/.+/models\\.py", "src/.+/services/"]
+  },
+  "skills": [
+    {
+      "skill": "django-conventions",
+      "domain": "backend",
+      "globs": ["src/**/*.py"],
+      "roots": ["src/"],
+      "reminder": [
+        "You are editing Django code. Apply the `django-conventions` skill (.claude/skills/django-conventions/SKILL.md).",
+        "Every model change comes with `python manage.py makemigrations`; never edit a migration that is already merged.",
+        "Querysets that return user data are always filtered by the current user's organisation."
+      ]
+    }
+  ],
+  "domains": [
+    { "domain": "web", "globs": ["src/**/templates/**", "src/**/static/**"] },
+    { "domain": "infra", "globs": ["scripts/**", ".claude/**", ".github/**", "docker/**"] }
+  ],
+  "locks": {
+    "lockfile": ["pyproject.toml", "poetry.lock", "requirements*.txt", "uv.lock"],
+    "db-migrations": ["src/**/migrations/**"]
+  },
+  "testDb": {
+    "commands": ["pytest", "manage.py test"],
+    "envFile": ".env.test"
+  },
+  "diffIgnore": ["**/test_*.py", "**/tests/**", "**/*.md", "**/migrations/**"],
+  "worker": { "linkDirs": [".venv", ".env.test"], "cloneDirs": [] },
+  "workers": 2,
+  "roles": {
+    "developer": {
+      "kind": "developer",
+      "when": { "always": true },
+      "skills": [],
+      "writes": ["**"],
+      "bash": ["Bash(pytest:*)", "Bash(python manage.py:*)", "Bash(.venv/bin/python:*)", "Bash(ruff:*)", "Bash(cd:*)"],
+      "model": "sonnet"
+    },
+    "qa": {
+      "kind": "evaluator",
+      "when": { "riskAtLeast": "medium" },
+      "skills": [],
+      "writes": ["**/test_*.py", "**/tests/**", "reports/**", "tasks/B-*"],
+      "bash": ["Bash(pytest:*)", "Bash(cd:*)"],
+      "model": "sonnet"
+    },
+    "migration-reviewer": {
+      "kind": "reviewer",
+      "when": {
+        "locks": ["db-migrations"],
+        "diff": { "paths": ["src/**/migrations/*.py"], "added": ["RemoveField", "DeleteModel", "AlterField", "RunSQL"] }
+      },
+      "skills": [],
+      "writes": [],
+      "model": "sonnet",
+      "maxBudgetUsd": 2
+    }
+  }
+}
