@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/tuanxminhxgi/agent-tools/discussions
+    about: Ask how to set something up, share your config, or float an idea before it becomes a request.

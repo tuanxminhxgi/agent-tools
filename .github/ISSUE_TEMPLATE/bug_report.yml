@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in agent-orchestration does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Please remove secrets (database URLs, tokens) from any log you paste.
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: From `/plugin` or `plugins/agent-orchestration/.claude-plugin/plugin.json`
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [init, Stop hook / task chaining, CLI (task command), planner, conductor / workers, reviewers / QA / bug loop, dashboard, config, docs, other]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Commands you ran, the task file (front-matter is enough) and your `.claude/agent-queue.config.json` if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Paste output verbatim — e.g. the tail of `.claude/agent-queue.log` or `logs/agent-queue/<task>/verifier.log`.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "OS, Node version, Claude Code version, stack of your project (e.g. Django + Postgres)"

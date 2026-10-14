@@ -1,0 +1,21 @@
+name: Feature request / feedback
+description: Suggest an improvement or share how the plugin fits (or does not fit) your workflow
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help?
+      description: A config key, a new role, a different default, a command…
+  - type: input
+    id: stack
+    attributes:
+      label: Your stack
+      placeholder: "e.g. Go service + GitHub Actions, Python/Django monorepo"

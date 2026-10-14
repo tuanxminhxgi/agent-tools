@@ -19,7 +19,7 @@ observability). Changes: [`CHANGELOG.md`](CHANGELOG.md).
 ## Install
 
 ```
-/plugin marketplace add <path or git URL of the repo containing .claude-plugin/marketplace.json>
+/plugin marketplace add tuanxminhxgi/agent-tools
 /plugin install agent-orchestration@agent-tools
 ```
 
